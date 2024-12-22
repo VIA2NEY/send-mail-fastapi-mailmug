@@ -9,6 +9,7 @@ import os
 # Charger les variables d'environnement
 load_dotenv()
 
+# Récupérer les variables d'environnement
 smtp_server = os.getenv("SMTP_SERVER")
 port = int(os.getenv("SMTP_PORT"))
 username = os.getenv("SMTP_USERNAME")
@@ -19,35 +20,38 @@ to_email = os.getenv("TO_EMAIL")
 
 app = FastAPI()
 
-
-# Créer le message
-message = MIMEMultipart()
-message["From"] = sender_email
-message["To"] = to_email
-# message["Subject"] = "Bienvenue dans notre application !"
-
-
-# Corps de l'e-mail
-# text = f"Bonjour {to_email},\n\nBienvenue dans notre application ! Nous sommes ravis de vous compter parmi nous.\n\nCordialement,\nL'équipe."
-# message.attach(MIMEText(text, "plain"))
-
 @app.get("/send")
 def send_email():
+    # Créer le message
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = to_email
+    message["Subject"] = "Bienvenue !"
 
     html = """
         <html>
         <body>
-            Salut
+            <h1>Salut !</h1>
+            <p>Bienvenue dans notre application !</p>
         </body>
         </html>
     """
     part = MIMEText(html, "html")
     message.attach(part)
+    
+    try:
+        # Configurer le serveur SMTP
+        server = smtplib.SMTP(smtp_server, port)
+        server.set_debuglevel(1)  # Activer le débogage pour voir les logs
+        server.starttls()  # Activer le chiffrement TLS
+        server.login(username, password)
 
-    server = smtplib.SMTP(smtp_server, port)
-    server.set_debuglevel(1)
-    server.esmtp_features["auth"] = 'LOGIN PLAIN'
-    server.login(username, password)
-    server.send_message(message)
+        # Envoyer le message
+        server.send_message(message)
 
-    return {"Hello MTFCK"}
+        # Fermer la connexion
+        server.quit()
+
+        return {"message": "E-mail envoyé avec succès"}
+    except Exception as e:
+        return {"error": str(e)}
